@@ -1,0 +1,728 @@
+\documentclass[12pt, a4paper]{report}
+
+% ===================== PACKAGES =====================
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{fancyhdr}
+\usepackage{tabularx}
+\usepackage{longtable}
+\usepackage{caption}
+\usepackage{tocloft}
+\usepackage{setspace}
+\usepackage{parskip}
+\usepackage{float}
+
+
+% ===================== CONFIG =====================
+\geometry{margin=2.5cm}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue!70!black,
+    urlcolor=blue!70!black,
+    citecolor=blue!70!black
+}
+
+\definecolor{primary}{RGB}{0, 82, 155}
+\definecolor{secondary}{RGB}{44, 62, 80}
+\definecolor{accent}{RGB}{231, 76, 60}
+
+\titleformat{\chapter}[display]
+    {\normalfont\Huge\bfseries\color{primary}}
+    {\chaptertitlename\ \thechapter}{20pt}{\Huge}
+
+\titleformat{\section}
+    {\normalfont\Large\bfseries\color{secondary}}
+    {\thesection}{1em}{}
+
+\titleformat{\subsection}
+    {\normalfont\large\bfseries\color{secondary!80}}
+    {\thesubsection}{1em}{}
+
+% ===================== HEADER/FOOTER =====================
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\textcolor{gray}{Cahier des Charges — Système de Quiz Interactif}}
+\fancyhead[R]{\small\textcolor{gray}{\leftmark}}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.2pt}
+
+% ===================== DOCUMENT =====================
+\begin{document}
+
+% ==================== PAGE DE GARDE ====================
+\begin{titlepage}
+    \centering
+    \vspace*{2cm}
+
+    % PLACEHOLDER : Logo de l'établissement
+    % \includegraphics[width=0.3\textwidth]{images/logo_universite.png}
+
+    \vspace{1cm}
+
+    {\Large\textsc{Tek-Up University}\par}
+    \vspace{0.3cm}
+
+    \vspace{2cm}
+
+    \rule{\textwidth}{1.5pt}
+    \vspace{0.5cm}
+    {\Huge\bfseries\textcolor{primary}{Cahier des Charges}\par}
+    \vspace{0.3cm}
+    {\LARGE\textcolor{secondary}{Système de Quiz Interactif}\par}
+    \vspace{0.5cm}
+    \rule{\textwidth}{1.5pt}
+
+    \vspace{2cm}
+
+    {\Large\textbf{Module :} Programmation Java\par}
+    \vspace{0.5cm}
+    {\Large\textbf{Réalisé par :}\\ Khouni Mohamed Yahia\\Asma Hdiji\\Ela Maki\\Souhaib Ammani\par}
+    \vspace{0.3cm}
+    {\Large\textbf{Encadré par :} Pr. Arfaoui Ahlem\par}
+
+    \vfill
+
+    {\large Année universitaire 2025 -- 2026\par}
+\end{titlepage}
+
+% ==================== TABLE DES MATIÈRES ====================
+\tableofcontents
+\newpage
+
+% ==================== LISTE DES FIGURES ====================
+\listoffigures
+\newpage
+
+% ==================== LISTE DES TABLEAUX ====================
+\listoftables
+\newpage
+
+% ============================================================
+%                  CHAPITRE 1 : INTRODUCTION GÉNÉRALE
+% ============================================================
+\chapter{Introduction Générale}
+
+\section{Contexte du projet}
+
+Dans le cadre du module de \textbf{Programmation Java}, il nous est demandé de concevoir et développer une application mettant en œuvre les concepts fondamentaux de la programmation orientée objet, l'utilisation des collections Java, ainsi que des techniques avancées telles que la persistance de données et les interfaces graphiques.
+
+Le projet choisi est un \textbf{Système de Quiz Interactif} : une application complète permettant de créer, gérer et passer des quiz à choix multiples, avec suivi des scores et classement des utilisateurs.
+
+\section{Problématique}
+
+Les systèmes d'évaluation traditionnels manquent souvent d'interactivité et de flexibilité. Comment concevoir une application Java qui permette à la fois :
+\begin{itemize}[noitemsep]
+    \item La création et la gestion dynamique de questions par un administrateur ?
+    \item La passation interactive de quiz par des utilisateurs ?
+    \item Le suivi et la persistance des scores dans le temps ?
+    \item Une expérience utilisateur agréable via une interface graphique ?
+\end{itemize}
+
+\section{Objectifs du projet}
+
+\subsection{Objectifs principaux}
+\begin{enumerate}[noitemsep]
+    \item Développer un système complet de quiz interactif en Java.
+    \item Mettre en œuvre les concepts de POO : héritage, abstraction, polymorphisme, encapsulation.
+    \item Utiliser les collections Java (\texttt{List}, \texttt{Map}, \texttt{Set}) avec généricité.
+    \item Implémenter la persistance des données via fichiers CSV et base de données MySQL (JDBC).
+    \item Concevoir une interface graphique avec JavaFX.
+\end{enumerate}
+
+\subsection{Objectifs secondaires}
+\begin{enumerate}[noitemsep]
+    \item Intégrer un système de chronomètre par question.
+    \item Proposer un classement (leaderboard) des meilleurs scores.
+    \item Permettre la catégorisation et le filtrage des questions par thème et difficulté.
+    \item Exporter les résultats en fichier texte.
+\end{enumerate}
+
+\section{Périmètre du projet}
+
+\begin{table}[h!]
+\centering
+\caption{Périmètre du projet}
+\label{tab:perimetre}
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+\textbf{Élément} & \textbf{Description} \\
+\hline
+Type d'application & Application desktop Java \\
+\hline
+Utilisateurs cibles & Étudiants (joueurs) et administrateurs \\
+\hline
+Plateforme & Windows / macOS / Linux (JVM) \\
+\hline
+Langue de l'interface & Français \\
+\hline
+Données & Questions, utilisateurs, scores \\
+\hline
+Persistance & Fichiers CSV + Base de données MySQL \\
+\hline
+\end{tabularx}
+\end{table}
+
+% ============================================================
+%                  CHAPITRE 2 : ANALYSE DES BESOINS
+% ============================================================
+\chapter{Analyse des Besoins}
+
+\section{Identification des acteurs}
+
+Le système identifie deux acteurs principaux :
+
+\begin{table}[h!]
+\centering
+\caption{Identification des acteurs}
+\label{tab:acteurs}
+\begin{tabularx}{\textwidth}{|l|l|X|}
+\hline
+\textbf{Acteur} & \textbf{Type} & \textbf{Description} \\
+\hline
+Joueur (Utilisateur) & Principal & Personne qui s'inscrit, passe des quiz et consulte ses scores. \\
+\hline
+Administrateur & Principal & Personne qui crée, modifie, supprime les questions et gère les catégories. \\
+\hline
+Système de fichiers & Secondaire & Stockage CSV pour import/export de données. \\
+\hline
+Base de données & Secondaire & Stockage MySQL pour la persistance JDBC. \\
+\hline
+\end{tabularx}
+\end{table}
+
+\section{Besoins fonctionnels}
+
+\subsection{Module Authentification}
+\begin{longtable}{|l|p{5cm}|p{6cm}|}
+\hline
+\textbf{Réf.} & \textbf{Fonctionnalité} & \textbf{Description} \\
+\hline
+\endfirsthead
+\hline
+\textbf{Réf.} & \textbf{Fonctionnalité} & \textbf{Description} \\
+\hline
+\endhead
+BF-01 & Inscription utilisateur & Créer un compte avec un nom d'utilisateur unique. \\
+\hline
+BF-02 & Connexion utilisateur & Se connecter avec son nom d'utilisateur. \\
+\hline
+BF-03 & Choix du rôle & Accéder au mode Joueur ou Administrateur. \\
+\hline
+\caption{Besoins fonctionnels — Authentification}
+\label{tab:bf_auth}
+\end{longtable}
+
+\subsection{Module Quiz (Joueur)}
+\begin{longtable}{|l|p{5cm}|p{6cm}|}
+\hline
+\textbf{Réf.} & \textbf{Fonctionnalité} & \textbf{Description} \\
+\hline
+\endfirsthead
+\hline
+\textbf{Réf.} & \textbf{Fonctionnalité} & \textbf{Description} \\
+\hline
+\endhead
+BF-04 & Choisir une catégorie & Sélectionner un thème de quiz (Science, Histoire, etc.). \\
+\hline
+BF-05 & Choisir la difficulté & Filtrer les questions par niveau (Facile, Moyen, Difficile). \\
+\hline
+BF-06 & Passer un quiz & Répondre à une série de questions à choix multiples. \\
+\hline
+BF-07 & Chronomètre par question & Temps limité (ex: 15s) pour répondre à chaque question. \\
+\hline
+BF-08 & Afficher le résultat & Voir le score, les réponses correctes et incorrectes. \\
+\hline
+BF-09 & Consulter l'historique & Voir ses scores passés par catégorie et date. \\
+\hline
+BF-10 & Consulter le classement & Voir le leaderboard des meilleurs scores. \\
+\hline
+BF-11 & Exporter les résultats & Sauvegarder ses résultats dans un fichier texte. \\
+\hline
+\caption{Besoins fonctionnels — Module Quiz}
+\label{tab:bf_quiz}
+\end{longtable}
+
+\subsection{Module Administration}
+\begin{longtable}{|l|p{5cm}|p{6cm}|}
+\hline
+\textbf{Réf.} & \textbf{Fonctionnalité} & \textbf{Description} \\
+\hline
+\endfirsthead
+\hline
+\textbf{Réf.} & \textbf{Fonctionnalité} & \textbf{Description} \\
+\hline
+\endhead
+BF-12 & Ajouter une question & Créer une question MCQ ou Vrai/Faux avec ses options. \\
+\hline
+BF-13 & Modifier une question & Mettre à jour le texte, les options ou la réponse correcte. \\
+\hline
+BF-14 & Supprimer une question & Retirer une question de la banque. \\
+\hline
+BF-15 & Lister les questions & Afficher toutes les questions avec filtres. \\
+\hline
+BF-16 & Importer depuis CSV & Charger des questions depuis un fichier CSV. \\
+\hline
+BF-17 & Exporter vers CSV & Sauvegarder les questions dans un fichier CSV. \\
+\hline
+BF-18 & Gérer les catégories & Ajouter ou modifier les thèmes de quiz. \\
+\hline
+\caption{Besoins fonctionnels — Administration}
+\label{tab:bf_admin}
+\end{longtable}
+
+\section{Besoins non fonctionnels}
+
+\begin{table}[h!]
+\centering
+\caption{Besoins non fonctionnels}
+\label{tab:bnf}
+\begin{tabularx}{\textwidth}{|l|l|X|}
+\hline
+\textbf{Réf.} & \textbf{Catégorie} & \textbf{Description} \\
+\hline
+BNF-01 & Performance & L'application doit répondre en moins de 2 secondes pour toute opération. \\
+\hline
+BNF-02 & Portabilité & L'application doit fonctionner sur tout système disposant d'une JVM (Java 17+). \\
+\hline
+BNF-03 & Ergonomie & L'interface graphique doit être intuitive et facile à utiliser. \\
+\hline
+BNF-04 & Maintenabilité & Le code doit respecter les principes SOLID et être bien documenté. \\
+\hline
+BNF-05 & Fiabilité & Les données doivent être sauvegardées de manière cohérente (pas de perte). \\
+\hline
+BNF-06 & Extensibilité & L'architecture doit permettre l'ajout de nouveaux types de questions facilement. \\
+\hline
+\end{tabularx}
+\end{table}
+
+% ============================================================
+%                  CHAPITRE 3 : MODÉLISATION UML
+% ============================================================
+\chapter{Modélisation UML}
+
+\section{Diagramme de cas d'utilisation}
+
+Le diagramme de cas d'utilisation ci-dessous présente les interactions entre les acteurs (Joueur et Administrateur) et les différentes fonctionnalités du système.
+
+\begin{figure}[H]
+    \centering
+    % PLACEHOLDER : Insérer le diagramme de cas d'utilisation généré depuis PlantUML
+    \includegraphics[width=0.85\textwidth]{use case java.png}
+    
+    \caption{Diagramme de cas d'utilisation du système de quiz interactif}
+    \label{fig:use_case}
+\end{figure}
+
+\subsection{Description textuelle des cas d'utilisation principaux}
+
+\subsubsection{CU-01 : Passer un quiz}
+\begin{table}[h!]
+\centering
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+\textbf{Cas d'utilisation} & Passer un quiz \\
+\hline
+\textbf{Acteur principal} & Joueur \\
+\hline
+\textbf{Préconditions} & Le joueur est connecté. Il existe des questions dans la banque. \\
+\hline
+\textbf{Scénario principal} &
+\begin{enumerate}[noitemsep, topsep=0pt]
+    \item Le joueur sélectionne une catégorie.
+    \item Le joueur choisit un niveau de difficulté.
+    \item Le système génère un quiz de 10 questions aléatoires.
+    \item Pour chaque question, le système affiche la question et lance le chronomètre.
+    \item Le joueur sélectionne une réponse.
+    \item Le système enregistre la réponse et passe à la suivante.
+    \item Après la dernière question, le système calcule et affiche le score.
+    \item Le score est sauvegardé dans l'historique.
+\end{enumerate} \\
+\hline
+\textbf{Scénario alternatif} & Si le chronomètre expire, la réponse est considérée comme incorrecte. \\
+\hline
+\textbf{Postconditions} & Le score est enregistré. Le joueur peut consulter ses résultats. \\
+\hline
+\end{tabularx}
+\caption{Description du cas d'utilisation — Passer un quiz}
+\label{tab:cu01}
+\end{table}
+
+\subsubsection{CU-02 : Gérer les questions}
+\begin{table}[h!]
+\centering
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+\textbf{Cas d'utilisation} & Gérer les questions \\
+\hline
+\textbf{Acteur principal} & Administrateur \\
+\hline
+\textbf{Préconditions} & L'administrateur est connecté en mode admin. \\
+\hline
+\textbf{Scénario principal} &
+\begin{enumerate}[noitemsep, topsep=0pt]
+    \item L'administrateur accède au panneau de gestion.
+    \item Il choisit une opération : ajouter, modifier, supprimer ou lister.
+    \item Pour l'ajout : il saisit le type, la catégorie, la difficulté, le texte, les options et la réponse correcte.
+    \item Le système valide et enregistre la question.
+    \item La liste des questions est mise à jour.
+\end{enumerate} \\
+\hline
+\textbf{Postconditions} & La banque de questions est mise à jour en mémoire et en base de données. \\
+\hline
+\end{tabularx}
+\caption{Description du cas d'utilisation — Gérer les questions}
+\label{tab:cu02}
+\end{table}
+
+\newpage
+\section{Diagramme de classes}
+
+Le diagramme de classes ci-dessous présente l'architecture orientée objet du système, incluant les classes abstraites, les interfaces, les relations d'héritage et d'association.
+
+\begin{figure}[h!]
+    \centering
+    % PLACEHOLDER : Insérer le diagramme de classes généré depuis PlantUML
+    \includegraphics[width=\textwidth]{class diagram java 2.png}
+    \caption{Diagramme de classes du système de quiz interactif}
+    \label{fig:class_diagram}
+\end{figure}
+
+% ============================================================
+%                  CHAPITRE 4 : CONCEPTION TECHNIQUE
+% ============================================================
+\chapter{Conception Technique}
+
+\section{Architecture du projet}
+
+L'application suit une architecture en couches séparant les responsabilités :
+
+\begin{table}[h!]
+\centering
+\caption{Architecture en couches}
+\label{tab:architecture}
+\begin{tabularx}{\textwidth}{|l|l|X|}
+\hline
+\textbf{Couche} & \textbf{Package} & \textbf{Responsabilité} \\
+\hline
+Modèle & \texttt{model} & Classes métier : Question, Quiz, User, ScoreRecord \\
+\hline
+Accès aux données & \texttt{dao} & Interfaces et implémentations DAO (fichier + JDBC) \\
+\hline
+Logique métier & \texttt{service} & Services : QuizService, UserService, StatisticsService \\
+\hline
+Interface utilisateur & \texttt{ui} & JavaFX GUI et console de secours \\
+\hline
+Utilitaires & \texttt{util} & FileManager, DatabaseConnection, Timer \\
+\hline
+\end{tabularx}
+\end{table}
+
+\section{Technologies et outils utilisés}
+
+\begin{table}[h!]
+\centering
+\caption{Technologies et outils}
+\label{tab:technologies}
+\begin{tabularx}{\textwidth}{|l|l|X|}
+\hline
+\textbf{Technologie} & \textbf{Version} & \textbf{Utilisation} \\
+\hline
+Java & 17+ & Langage de développement principal \\
+\hline
+JavaFX & 21+ & Interface graphique (GUI) \\
+\hline
+MySQL & 3.x & Base de données locale légère \\
+\hline
+JDBC & 4.x & API de connexion à la base de données \\
+\hline
+CSV & — & Format de fichier pour import/export \\
+\hline
+Maven & 3.9+ & Gestion des dépendances et build \\
+\hline
+Git + GitHub & — & Gestion de version et collaboration \\
+\hline
+PlantUML & — & Génération des diagrammes UML \\
+\hline
+LaTeX & — & Rédaction du cahier des charges \\
+\hline
+\end{tabularx}
+\end{table}
+
+\section{Structure des données}
+
+\subsection{Format CSV — Fichier questions}
+
+\begin{table}[h!]
+\centering
+\caption{Format du fichier questions.csv}
+\label{tab:csv_questions}
+\begin{tabularx}{\textwidth}{|l|l|X|}
+\hline
+\textbf{Champ} & \textbf{Type} & \textbf{Description} \\
+\hline
+id & Entier & Identifiant unique de la question \\
+\hline
+type & Chaîne & Type de question (MCQ, TF) \\
+\hline
+category & Chaîne & Catégorie/thème de la question \\
+\hline
+difficulty & Chaîne & Niveau de difficulté (EASY, MEDIUM, HARD) \\
+\hline
+text & Chaîne & Énoncé de la question \\
+\hline
+optionA & Chaîne & Première option de réponse \\
+\hline
+optionB & Chaîne & Deuxième option de réponse \\
+\hline
+optionC & Chaîne & Troisième option (vide pour TF) \\
+\hline
+optionD & Chaîne & Quatrième option (vide pour TF) \\
+\hline
+correctAnswer & Chaîne & Lettre de la réponse correcte (A, B, C, D) \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsection{Schéma de la base de données MySQL}
+
+\begin{table}[h!]
+\centering
+\caption{Table \texttt{questions}}
+\label{tab:db_questions}
+\begin{tabular}{|l|l|l|l|}
+\hline
+\textbf{Colonne} & \textbf{Type} & \textbf{Contrainte} & \textbf{Description} \\
+\hline
+id & INTEGER & PRIMARY KEY, AUTOINCREMENT & Identifiant unique \\
+\hline
+type & TEXT & NOT NULL & Type (MCQ, TF) \\
+\hline
+category & TEXT & NOT NULL & Catégorie \\
+\hline
+difficulty & TEXT & NOT NULL & Difficulté \\
+\hline
+text & TEXT & NOT NULL & Énoncé \\
+\hline
+option\_a & TEXT & & Option A \\
+\hline
+option\_b & TEXT & & Option B \\
+\hline
+option\_c & TEXT & & Option C \\
+\hline
+option\_d & TEXT & & Option D \\
+\hline
+correct\_answer & TEXT & NOT NULL & Réponse correcte \\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{table}[h!]
+\centering
+\caption{Table \texttt{users}}
+\label{tab:db_users}
+\begin{tabular}{|l|l|l|l|}
+\hline
+\textbf{Colonne} & \textbf{Type} & \textbf{Contrainte} & \textbf{Description} \\
+\hline
+id & INTEGER & PRIMARY KEY, AUTOINCREMENT & Identifiant unique \\
+\hline
+username & TEXT & UNIQUE, NOT NULL & Nom d'utilisateur \\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{table}[h!]
+\centering
+\caption{Table \texttt{scores}}
+\label{tab:db_scores}
+\begin{tabular}{|l|l|l|l|}
+\hline
+\textbf{Colonne} & \textbf{Type} & \textbf{Contrainte} & \textbf{Description} \\
+\hline
+id & INTEGER & PRIMARY KEY, AUTOINCREMENT & Identifiant unique \\
+\hline
+user\_id & INTEGER & FOREIGN KEY $\rightarrow$ users(id) & Référence utilisateur \\
+\hline
+category & TEXT & & Catégorie du quiz \\
+\hline
+score & INTEGER & & Score obtenu \\
+\hline
+total & INTEGER & & Nombre total de questions \\
+\hline
+date & TEXT & & Date de passage \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{Interfaces graphiques}
+
+L'application JavaFX comportera les écrans suivants :
+
+\begin{table}[h!]
+\centering
+\caption{Liste des écrans JavaFX}
+\label{tab:ecrans}
+\begin{tabularx}{\textwidth}{|l|l|X|}
+\hline
+\textbf{Écran} & \textbf{Identifiant} & \textbf{Description} \\
+\hline
+Accueil & \texttt{HomeScreen} & Connexion utilisateur, choix du mode (Joueur/Admin) \\
+\hline
+Quiz & \texttt{QuizScreen} & Affichage des questions, options, chronomètre \\
+\hline
+Résultats & \texttt{ResultScreen} & Score final, détail des réponses, export \\
+\hline
+Classement & \texttt{LeaderboardScreen} & Top 10 des meilleurs scores \\
+\hline
+Administration & \texttt{AdminScreen} & CRUD des questions, import/export CSV \\
+\hline
+\end{tabularx}
+\end{table}
+
+
+
+% ============================================================
+%                  CHAPITRE 5 : PLANIFICATION
+% ============================================================
+\chapter{Planification du Projet}
+
+\section{Découpage en phases}
+
+\begin{table}[h!]
+\centering
+\caption{Planning de réalisation (1 mois)}
+\label{tab:planning}
+\begin{tabularx}{\textwidth}{|l|l|l|X|}
+\hline
+\textbf{Phase} & \textbf{Durée} & \textbf{Période} & \textbf{Livrables} \\
+\hline
+Phase 1 — Modèles \& Console & 1 semaine & Semaine 1 & Classes modèle, quiz en console fonctionnel \\
+\hline
+Phase 2 — Fichiers CSV \& Administration & 1 semaine & Semaine 2 & Import/export CSV + CRUD questions en console \\
+\hline
+Phase 3 — Base de données & 1 semaine & Semaine 3 & Intégration MySQL + JDBC \\
+\hline
+Phase 4 — Interface JavaFX & 1 semaine & Semaine 4 & GUI fonctionnelle (écrans principaux) \\
+\hline
+Phase 5 — Fonctionnalités bonus \& Tests & En continu & Semaine 4 & Timer, leaderboard, tests, documentation \\
+\hline
+\end{tabularx}
+\end{table}
+
+% ============================================================
+%                  CHAPITRE 6 : CONTRAINTES & RISQUES
+% ============================================================
+\chapter{Contraintes et Gestion des Risques}
+
+\section{Contraintes techniques}
+
+\begin{itemize}[noitemsep]
+    \item Le projet doit être développé en \textbf{Java 17} ou supérieur.
+    \item L'utilisation des collections Java (\texttt{List}, \texttt{Map}) est \textbf{obligatoire}.
+    \item La persistance doit être assurée par au moins un mécanisme (fichier ou base de données).
+    \item L'application doit pouvoir fonctionner sans connexion Internet (base locale MySQL).
+\end{itemize}
+
+\section{Contraintes organisationnelles}
+
+\begin{itemize}[noitemsep]
+    \item Projet par groupe.
+    \item Délai de réalisation limité (environ un mois).
+    \item Livraison du code source + démonstration.
+\end{itemize}
+
+\section{Analyse des risques}
+
+\begin{table}[h!]
+\centering
+\caption{Analyse des risques}
+\label{tab:risques}
+\begin{tabularx}{\textwidth}{|l|l|l|X|}
+\hline
+\textbf{Risque} & \textbf{Probabilité} & \textbf{Impact} & \textbf{Mitigation} \\
+\hline
+Retard sur le planning & Moyenne & Élevé & Développement incrémental (toujours un livrable fonctionnel) \\
+\hline
+Difficultés avec JavaFX & Moyenne & Moyen & Prévoir un mode console comme fallback \\
+\hline
+Problèmes de configuration JDBC & Faible & Moyen & Utiliser MySQL (pas de serveur à configurer) \\
+\hline
+Perte de données & Faible & Élevé & Double persistance (CSV + MySQL) \\
+\hline
+Complexité sous-estimée & Moyenne & Moyen & Prioriser les fonctionnalités par valeur \\
+\hline
+\end{tabularx}
+\end{table}
+
+% ============================================================
+%                  CHAPITRE 7 : CONCLUSION
+% ============================================================
+\chapter{Conclusion}
+
+Ce cahier des charges définit le cadre complet du projet \textbf{Système de Quiz Interactif}. Le projet permettra de mettre en pratique l'ensemble des compétences acquises en programmation Java :
+
+\begin{itemize}[noitemsep]
+    \item \textbf{Programmation orientée objet} : classes abstraites, interfaces, héritage, polymorphisme.
+    \item \textbf{Collections Java} : \texttt{List<Question>}, \texttt{Map<String, List<ScoreRecord>>} avec généricité.
+    \item \textbf{Persistance} : fichiers CSV et base de données MySQL via JDBC.
+    \item \textbf{Interface graphique} : application JavaFX multi-écrans.
+    \item \textbf{Architecture logicielle} : séparation en couches (modèle, DAO, service, UI).
+\end{itemize}
+
+L'approche incrémentale adoptée garantit qu'un livrable fonctionnel sera disponible à chaque phase du développement, minimisant ainsi les risques liés aux délais.
+
+% ============================================================
+%                  ANNEXES
+% ============================================================
+\appendix
+
+\chapter{Annexes}
+
+\section{Glossaire}
+
+\begin{table}[h!]
+\centering
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+\textbf{Terme} & \textbf{Définition} \\
+\hline
+MCQ & Multiple Choice Question — Question à choix multiples \\
+\hline
+DAO & Data Access Object — Patron de conception pour l'accès aux données \\
+\hline
+JDBC & Java Database Connectivity — API Java pour la connexion aux bases de données \\
+\hline
+CRUD & Create, Read, Update, Delete — Opérations de base sur les données \\
+\hline
+CSV & Comma-Separated Values — Format de fichier texte délimité par des virgules \\
+\hline
+GUI & Graphical User Interface — Interface graphique utilisateur \\
+\hline
+POO & Programmation Orientée Objet \\
+\hline
+JVM & Java Virtual Machine — Machine virtuelle Java \\
+\hline
+\end{tabularx}
+\caption{Glossaire des termes techniques}
+\label{tab:glossaire}
+\end{table}
+
+\section{Références}
+\begin{enumerate}[noitemsep]
+    \item Oracle. \textit{Java SE Documentation}. \url{https://docs.oracle.com/en/java/}
+    \item Oracle. \textit{JavaFX Documentation}. \url{https://openjfx.io/}
+    \item MySQL. \textit{MySQL Documentation}. \url{https://www.MySQL.org/docs.html}
+    \item Xerial. \textit{MySQL JDBC Driver}. \url{https://github.com/xerial/MySQL-jdbc}
+\end{enumerate}
+
+\end{document}

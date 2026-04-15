@@ -1,0 +1,9 @@
+target/
+.idea/
+.vscode/
+*.iml
+*.log
+*.class
+
+# Local environment overrides
+src/main/resources/application-local.properties
