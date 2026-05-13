@@ -20,6 +20,8 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 
@@ -52,45 +54,76 @@ public class AdminCsvScreen implements AppScreen {
         this.csvQuestionService = Objects.requireNonNull(csvQuestionService, "csvQuestionService must not be null");
         this.questionDao = Objects.requireNonNull(questionDao, "questionDao must not be null");
 
+        Label csvIcon = new Label("📥");
+        csvIcon.setStyle("-fx-font-size: 24px;");
         Label title = new Label("CSV Tools");
-        title.setStyle("-fx-font-size: 24px; -fx-font-weight: bold;");
+        title.getStyleClass().add("screen-title");
 
-        subtitleLabel = new Label();
-        subtitleLabel.setStyle("-fx-text-fill: #2f4050;");
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
 
-        Button importButton = new Button("Import questions CSV");
-        importButton.setOnAction(event -> importCsv());
-
-        Button exportButton = new Button("Export questions CSV");
-        exportButton.setOnAction(event -> exportCsv());
-
-        Button dashboardButton = new Button("Back to dashboard");
+        Button dashboardButton = new Button("← Dashboard");
+        dashboardButton.getStyleClass().add("nav-button");
         dashboardButton.setOnAction(event -> screenManager.show(AppRoute.ADMIN_DASHBOARD));
 
         Button logoutButton = new Button("Logout");
+        logoutButton.getStyleClass().add("danger-button");
         logoutButton.setOnAction(event -> {
             sessionContext.clear();
             screenManager.show(AppRoute.AUTH);
         });
 
-        HBox actions = new HBox(10, importButton, exportButton, dashboardButton, logoutButton);
-        actions.setAlignment(Pos.CENTER_LEFT);
+        HBox titleRow = new HBox(12, csvIcon, title, spacer, dashboardButton, logoutButton);
+        titleRow.setAlignment(Pos.CENTER_LEFT);
+
+        subtitleLabel = new Label();
+        subtitleLabel.getStyleClass().add("screen-subtitle");
+
+        // Action card
+        Label actHeader = new Label("BULK OPERATIONS");
+        actHeader.setStyle("-fx-text-fill: #4a5a78; -fx-font-size: 11px; -fx-font-weight: 700;");
+
+        Button importButton = new Button("📂  Import Questions from CSV");
+        importButton.getStyleClass().add("primary-button");
+        importButton.setMaxWidth(Double.MAX_VALUE);
+        importButton.setOnAction(event -> importCsv());
+
+        Button exportButton = new Button("💾  Export All Questions to CSV");
+        exportButton.getStyleClass().add("primary-button");
+        exportButton.setMaxWidth(Double.MAX_VALUE);
+        exportButton.setOnAction(event -> exportCsv());
+
+        Label csvHint = new Label("CSV format: type, category_id, difficulty, prompt, option_a, option_b, option_c, option_d, correct_answer");
+        csvHint.setStyle("-fx-text-fill: #4a5a78; -fx-font-size: 11px;");
+        csvHint.setWrapText(true);
+
+        VBox actionCard = new VBox(10, actHeader, importButton, exportButton, csvHint);
+        actionCard.getStyleClass().add("stat-card");
+
+        // Report list
+        Label reportHeader = new Label("IMPORT / EXPORT LOG");
+        reportHeader.setStyle("-fx-text-fill: #4a5a78; -fx-font-size: 11px; -fx-font-weight: 700;");
 
         reportListView = new ListView<>();
-        reportListView.setPrefHeight(360);
+        reportListView.getStyleClass().add("modern-list");
+        VBox.setVgrow(reportListView, Priority.ALWAYS);
+
+        VBox reportSection = new VBox(8, reportHeader, reportListView);
+        VBox.setVgrow(reportSection, Priority.ALWAYS);
 
         feedbackLabel = new Label();
         feedbackLabel.setWrapText(true);
-        feedbackLabel.setStyle("-fx-text-fill: #b00020;");
+        feedbackLabel.getStyleClass().add("feedback-error");
 
-        root = new VBox(12, title, subtitleLabel, actions, reportListView, feedbackLabel);
-        root.setPadding(new Insets(24));
-        root.setStyle("-fx-background-color: #f7f0f6;");
+        root = new VBox(16, titleRow, subtitleLabel, actionCard, reportSection, feedbackLabel);
+        root.getStyleClass().addAll("app-root", "screen-admin");
+        root.setPadding(new Insets(28));
+        VBox.setVgrow(reportSection, Priority.ALWAYS);
     }
 
     @Override
     public String title() {
-        return "Interactive Quiz - Admin CSV";
+        return "QuizMaster — CSV Tools";
     }
 
     @Override
@@ -112,8 +145,8 @@ public class AdminCsvScreen implements AppScreen {
             return;
         }
 
-        subtitleLabel.setText("Import/export question datasets");
-        feedbackLabel.setText("");
+        subtitleLabel.setText("Bulk import or export questions via CSV file");
+        setFeedback("", "feedback-error");
         reportListView.setItems(FXCollections.observableArrayList(List.of()));
     }
 
@@ -149,8 +182,10 @@ public class AdminCsvScreen implements AppScreen {
                     result.getErrors().size()
             );
 
-            feedbackLabel.setStyle(result.hasErrors() ? "-fx-text-fill: #7a6200;" : "-fx-text-fill: #0a7d2f;");
-            feedbackLabel.setText("Imported rows: " + result.getImportedCount() + " | Errors: " + result.getErrors().size());
+            setFeedback(
+                    "Imported rows: " + result.getImportedCount() + " | Errors: " + result.getErrors().size(),
+                    result.hasErrors() ? "feedback-warning" : "feedback-success"
+            );
 
             if (result.getErrors().isEmpty()) {
                 reportListView.setItems(FXCollections.observableArrayList(List.of("No validation errors.")));
@@ -165,8 +200,7 @@ public class AdminCsvScreen implements AppScreen {
                     selectedFile.getAbsolutePath(),
                     exception
             );
-            feedbackLabel.setStyle("-fx-text-fill: #b00020;");
-            feedbackLabel.setText("Could not read CSV file. Check file path and permissions.");
+            setFeedback("Could not read CSV file. Check file path and permissions.", "feedback-error");
         } catch (RuntimeException exception) {
             LOGGER.error(
                     "Admin CSV import failed (runtime): actorId={} actor={} path={}",
@@ -175,8 +209,7 @@ public class AdminCsvScreen implements AppScreen {
                     selectedFile.getAbsolutePath(),
                     exception
             );
-            feedbackLabel.setStyle("-fx-text-fill: #b00020;");
-            feedbackLabel.setText("CSV import failed: " + exception.getMessage());
+            setFeedback("CSV import failed: " + exception.getMessage(), "feedback-error");
         }
     }
 
@@ -215,8 +248,10 @@ public class AdminCsvScreen implements AppScreen {
                     questions.size()
             );
 
-            feedbackLabel.setStyle("-fx-text-fill: #0a7d2f;");
-            feedbackLabel.setText("Exported " + questions.size() + " question(s) to " + selectedFile.getAbsolutePath());
+            setFeedback(
+                    "Exported " + questions.size() + " question(s) to " + selectedFile.getAbsolutePath(),
+                    "feedback-success"
+            );
             reportListView.setItems(FXCollections.observableArrayList(List.of("Export completed.")));
         } catch (IOException exception) {
             LOGGER.error(
@@ -226,8 +261,7 @@ public class AdminCsvScreen implements AppScreen {
                     selectedFile.getAbsolutePath(),
                     exception
             );
-            feedbackLabel.setStyle("-fx-text-fill: #b00020;");
-            feedbackLabel.setText("Could not write CSV file. Check destination permissions.");
+            setFeedback("Could not write CSV file. Check destination permissions.", "feedback-error");
         } catch (RuntimeException exception) {
             LOGGER.error(
                     "Admin CSV export failed (runtime): actorId={} actor={} path={}",
@@ -236,8 +270,13 @@ public class AdminCsvScreen implements AppScreen {
                     selectedFile.getAbsolutePath(),
                     exception
             );
-            feedbackLabel.setStyle("-fx-text-fill: #b00020;");
-            feedbackLabel.setText("CSV export failed. Please try again.");
+            setFeedback("CSV export failed. Please try again.", "feedback-error");
         }
+    }
+
+    private void setFeedback(String message, String styleClass) {
+        feedbackLabel.getStyleClass().removeAll("feedback-error", "feedback-success", "feedback-warning");
+        feedbackLabel.getStyleClass().add(styleClass);
+        feedbackLabel.setText(message);
     }
 }

@@ -68,7 +68,7 @@ public class MainApp extends Application {
             );
             screenManager.register(
                     AppRoute.CATEGORY,
-                    new CategorySelectionScreen(screenManager, sessionContext, categoryDao)
+                    new CategorySelectionScreen(screenManager, sessionContext, categoryDao, questionDao)
             );
             screenManager.register(
                     AppRoute.QUIZ,

@@ -1,72 +1,119 @@
-# Interactive Quiz (Java)
+# Interactive Quiz (JavaFX + MySQL)
 
-Initial implementation bootstrap for the Java interactive quiz project.
+An interactive quiz desktop application with JavaFX UI and a console fallback. Players can register, take timed quizzes, view results and leaderboards, while admins manage categories/questions and import/export CSV data.
+
+## Features
+- Player: register/login, timed quiz, results, leaderboard, history
+- Admin: categories/questions CRUD, CSV import/export with row-level validation
+- MySQL persistence with pooled connections (HikariCP)
+- BCrypt password hashing
+- Structured logging for key flows
 
 ## Tech stack
-- Java 17+ (JDK)
-- Maven
-- JavaFX
+- Java 17 (JDK)
+- Maven Wrapper
+- JavaFX 21
 - MySQL 8+
-- BCrypt password hashing
+- HikariCP, BCrypt, SLF4J
+- JUnit 5 + H2 for tests
 
-## Run checks
-- Build and tests (Windows): mvnw.cmd test
-- Build and tests (Linux/macOS): ./mvnw test
-- Run JavaFX app (Windows): mvnw.cmd javafx:run
-- Run JavaFX app (Linux/macOS): ./mvnw javafx:run
+## Setup from A to Z
 
-## CI quality gate
-- GitHub Actions workflow: .github/workflows/ci.yml
-- Trigger: push and pull_request
-- Command executed in CI: ./mvnw -B -ntp verify
+### 1) Prerequisites
+Install:
+- JDK 17 (not JRE)
+- MySQL 8+
+
+Verify:
+```bash
+java -version
+javac -version
+```
+
+### 2) Clone the repository
+```bash
+git clone https://github.com/Souhaib55/Java_Project.git
+cd Java_Project
+```
+
+### 3) Create the database schema
+1. Start MySQL.
+2. Run the SQL script:
+   - `src/main/resources/db/schema.sql`
+
+This creates tables and inserts seed categories.
+
+### 4) Configure runtime settings
+Edit `src/main/resources/application.properties`:
+
+Required:
+- `db.url`
+- `db.username`
+- `db.password`
+
+Optional:
+- `db.pool.*` (HikariCP tuning)
+- `quiz.defaultQuestionCount`
+- `quiz.secondsPerQuestion`
+- `session.timeoutMinutes`
+
+Environment overrides are supported by `AppConfig` (for example `DB_URL`).
+
+### 5) Build and test
+Windows:
+```powershell
+./mvnw.cmd test
+```
+
+Linux/macOS:
+```bash
+./mvnw test
+```
+
+### 6) Run the JavaFX app
+Windows:
+```powershell
+./mvnw.cmd javafx:run
+```
+
+Linux/macOS:
+```bash
+./mvnw javafx:run
+```
+
+### 7) Console fallback (optional)
+Run `com.tekup.quiz.ui.ConsoleApp` from your IDE for the text-based login/register flow.
+
+## Project structure
+```
+projetjava/
+  src/main/java/          Application code
+  src/main/resources/     application.properties, db/schema.sql
+  src/test/java/          Unit + integration tests
+  src/test/resources/     H2 test config
+  pom.xml                 Dependencies and build config
+  mvnw, mvnw.cmd          Maven Wrapper
+```
+
+## Testing
+- Full suite (Windows): `./mvnw.cmd test`
+- Full suite (Linux/macOS): `./mvnw test`
+
+Integration tests use H2 and the config in `src/test/resources/application.properties`.
+
+## CI
+- Workflow: `.github/workflows/ci.yml`
+- Command: `./mvnw -B -ntp verify`
+
+## Troubleshooting
+- **"No compiler is provided in this environment"**
+  - Install JDK 17 and ensure `JAVA_HOME` points to it.
+- **DB connection errors**
+  - Verify MySQL is running and credentials in `application.properties`.
+- **Table not found in tests**
+  - Ensure `IntegrationTestDatabase.resetSchema()` runs in DAO tests.
 
 ## Runbooks
-- Testing setup: SETUP_TESTING.md
-- Build and deploy: BUILD_AND_DEPLOY.md
-
-## Database setup
-- Execute the schema file before running the app:
-	- src/main/resources/db/schema.sql
-- Ensure application.properties has valid MySQL credentials.
-
-## Database pool settings
-- Pooled DB access is enabled through HikariCP.
-- Optional tuning keys in src/main/resources/application.properties:
-	- db.pool.maxSize
-	- db.pool.minIdle
-	- db.pool.connectionTimeoutMs
-	- db.pool.validationTimeoutMs
-	- db.pool.idleTimeoutMs
-	- db.pool.maxLifetimeMs
-
-## Session safety
-- Session inactivity timeout is enabled with key:
-	- session.timeoutMinutes
-- Expired sessions are redirected to authentication with a clear timeout message.
-
-## Runtime observability
-- Structured service/DAO logging is enabled for:
-	- Authentication attempts and outcomes
-	- Quiz generation/evaluation lifecycle
-	- Leaderboard and history data loading paths
-	- Result export lifecycle
-	- CSV import/export summaries and row-level rejects
-	- Admin action audit trails (category/question/CSV operations)
-	- Screen-level load and recovery failures (history/leaderboard/result/admin CSV)
-	- Database pool initialization and connection verification
-
-## Current status
-- Project structure initialized
-- Domain model and DAO contracts implemented
-- JDBC implementations started (users, categories, questions, attempts) with admin listing/delete support
-- Auth, quiz, leaderboard, history, CSV import/export services started
-- Stabilization started: H2-backed DAO integration tests and CSV service edge-case tests added
-- Reliability hardening started: Maven Wrapper and startup DB/config failure handling added
-- Persistence hardening started: pooled DB connections, optimized random question retrieval, and stronger CSV parsing/validation added
-- Release safety hardening started: shared form validation, session timeout guardrails, and structured logging added
-- JavaFX navigation foundation implemented
-- JavaFX flow implemented: Authentication -> Category + Quiz Config -> Timed Quiz -> Result -> Leaderboard/History
-- ADMIN flow implemented: Dashboard -> Category Management -> Question Management -> CSV Tools
-- ADMIN routes are guarded and hidden for PLAYER users
-- Console fallback auth flow available
-# Java_Project
+- Testing setup: `SETUP_TESTING.md`
+- Build and deploy: `BUILD_AND_DEPLOY.md`
+- Project deep-dive: `JavaProjectExplanation.md`

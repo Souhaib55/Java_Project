@@ -30,6 +30,8 @@ import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 
 import java.util.ArrayList;
@@ -62,6 +64,7 @@ public class AdminQuestionScreen implements AppScreen {
     private final TextField optionCField;
     private final TextField optionDField;
     private final TextField correctAnswerField;
+    private final Label formModeLabel;
 
     private final Map<Long, Category> categoryMap = new java.util.HashMap<>();
     private Question selectedQuestion;
@@ -70,156 +73,227 @@ public class AdminQuestionScreen implements AppScreen {
                                SessionContext sessionContext,
                                QuestionDao questionDao,
                                CategoryDao categoryDao) {
-        this.screenManager = Objects.requireNonNull(screenManager, "screenManager must not be null");
-        this.sessionContext = Objects.requireNonNull(sessionContext, "sessionContext must not be null");
-        this.questionDao = Objects.requireNonNull(questionDao, "questionDao must not be null");
-        this.categoryDao = Objects.requireNonNull(categoryDao, "categoryDao must not be null");
+        this.screenManager = Objects.requireNonNull(screenManager);
+        this.sessionContext = Objects.requireNonNull(sessionContext);
+        this.questionDao = Objects.requireNonNull(questionDao);
+        this.categoryDao = Objects.requireNonNull(categoryDao);
 
+        // ── Header ────────────────────────────────────────────
+        Label icon = new Label("❓");
+        icon.setStyle("-fx-font-size: 24px;");
         Label title = new Label("Question Management");
-        title.setStyle("-fx-font-size: 24px; -fx-font-weight: bold;");
+        title.getStyleClass().add("screen-title");
+
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+
+        Button backButton = new Button("← Dashboard");
+        backButton.getStyleClass().add("nav-button");
+        backButton.setOnAction(event -> screenManager.show(AppRoute.ADMIN_DASHBOARD));
+
+        Button logoutButton = new Button("Logout");
+        logoutButton.getStyleClass().add("danger-button");
+        logoutButton.setOnAction(event -> { sessionContext.clear(); screenManager.show(AppRoute.AUTH); });
+
+        HBox titleRow = new HBox(12, icon, title, spacer, backButton, logoutButton);
+        titleRow.setAlignment(Pos.CENTER_LEFT);
 
         subtitleLabel = new Label();
-        subtitleLabel.setStyle("-fx-text-fill: #2f4050;");
+        subtitleLabel.getStyleClass().add("screen-subtitle");
 
+        // ── Filter bar ────────────────────────────────────────
+        Label filterLabel = new Label("Filter by category:");
+        filterLabel.setStyle("-fx-text-fill: #7a8caa; -fx-font-size: 12px;");
         filterCategoryCombo = new ComboBox<>();
-        filterCategoryCombo.setPrefWidth(260);
+        filterCategoryCombo.setPrefWidth(240);
         filterCategoryCombo.setOnAction(event -> loadQuestions());
 
+        HBox filterBar = new HBox(10, filterLabel, filterCategoryCombo);
+        filterBar.setAlignment(Pos.CENTER_LEFT);
+
+        // ── Question list ─────────────────────────────────────
+        Label listHeader = new Label("QUESTIONS");
+        listHeader.setStyle("-fx-text-fill: #4a5a78; -fx-font-size: 11px; -fx-font-weight: 700;");
+
         questionListView = new ListView<>();
-        questionListView.setPrefHeight(260);
+        questionListView.setPrefHeight(240);
+        questionListView.getStyleClass().add("modern-list");
         questionListView.setCellFactory(view -> new ListCell<>() {
             @Override
             protected void updateItem(Question item, boolean empty) {
                 super.updateItem(item, empty);
-                if (empty || item == null) {
-                    setText(null);
-                    return;
-                }
+                if (empty || item == null) { setGraphic(null); setText(null); return; }
                 String categoryName = categoryMap.containsKey(item.getCategoryId())
-                        ? categoryMap.get(item.getCategoryId()).getName()
-                        : "Unknown";
+                        ? categoryMap.get(item.getCategoryId()).getName() : "?";
                 String prompt = item.getPrompt();
-                String shortPrompt = prompt.length() > 60 ? prompt.substring(0, 57) + "..." : prompt;
-                setText("#" + item.getId() + " " + item.getType() + " | " + categoryName + " | " + item.getDifficulty() + " | " + shortPrompt);
+                String shortPrompt = prompt.length() > 55 ? prompt.substring(0, 52) + "…" : prompt;
+
+                String diffStyle = switch (item.getDifficulty()) {
+                    case EASY -> "badge-easy";
+                    case MEDIUM -> "badge-medium";
+                    case HARD -> "badge-hard";
+                };
+                Label diffBadge = new Label(item.getDifficulty().name());
+                diffBadge.getStyleClass().add(diffStyle);
+
+                Label typeBadge = new Label(item.getType().name());
+                typeBadge.getStyleClass().add("badge-info");
+
+                Label catLabel = new Label(categoryName);
+                catLabel.setStyle("-fx-text-fill: #7a8caa; -fx-font-size: 11px;");
+
+                Label promptLabel = new Label(shortPrompt);
+                promptLabel.setStyle("-fx-text-fill: #c7d2ee;");
+
+                HBox badges = new HBox(6, typeBadge, diffBadge, catLabel);
+                badges.setAlignment(Pos.CENTER_LEFT);
+
+                VBox cellContent = new VBox(3, promptLabel, badges);
+                setGraphic(cellContent);
+                setText(null);
             }
         });
-        questionListView.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> loadQuestionIntoForm(newVal));
+        questionListView.getSelectionModel().selectedItemProperty()
+                .addListener((obs, oldVal, newVal) -> loadQuestionIntoForm(newVal));
+
+        VBox listPane = new VBox(8, listHeader, filterBar, questionListView);
+        VBox.setVgrow(questionListView, Priority.ALWAYS);
+
+        // ── Form ──────────────────────────────────────────────
+        Label formHeader = new Label("ADD / EDIT QUESTION");
+        formHeader.setStyle("-fx-text-fill: #4a5a78; -fx-font-size: 11px; -fx-font-weight: 700;");
+
+        formModeLabel = new Label("Fill in the fields to create a new question.");
+        formModeLabel.setStyle("-fx-text-fill: #7a8caa; -fx-font-size: 12px;");
+        formModeLabel.setWrapText(true);
 
         typeCombo = new ComboBox<>();
         typeCombo.getItems().addAll(QuestionType.MCQ, QuestionType.TRUE_FALSE);
         typeCombo.setValue(QuestionType.MCQ);
+        typeCombo.setMaxWidth(Double.MAX_VALUE);
         typeCombo.setOnAction(event -> updateTypeInputs());
 
+        // Category combo with explicit cell factory (belt-and-suspenders alongside toString())
         categoryCombo = new ComboBox<>();
+        categoryCombo.setMaxWidth(Double.MAX_VALUE);
+        categoryCombo.setCellFactory(lv -> new ListCell<>() {
+            @Override protected void updateItem(Category item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? null : item.getName());
+            }
+        });
+        categoryCombo.setButtonCell(new ListCell<>() {
+            @Override protected void updateItem(Category item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? null : item.getName());
+            }
+        });
 
         difficultyCombo = new ComboBox<>();
         difficultyCombo.getItems().addAll(Difficulty.values());
         difficultyCombo.setValue(Difficulty.MEDIUM);
+        difficultyCombo.setMaxWidth(Double.MAX_VALUE);
 
         promptArea = new TextArea();
-        promptArea.setPromptText("Question prompt");
+        promptArea.setPromptText("Question text…");
         promptArea.setPrefRowCount(3);
+        promptArea.setWrapText(true);
+        promptArea.setMaxWidth(Double.MAX_VALUE);
 
-        optionAField = new TextField();
-        optionAField.setPromptText("Option A");
+        optionAField = new TextField(); optionAField.setPromptText("Option A");
+        optionBField = new TextField(); optionBField.setPromptText("Option B");
+        optionCField = new TextField(); optionCField.setPromptText("Option C");
+        optionDField = new TextField(); optionDField.setPromptText("Option D");
+        correctAnswerField = new TextField(); correctAnswerField.setPromptText("Correct (A/B/C/D or TRUE/FALSE)");
 
-        optionBField = new TextField();
-        optionBField.setPromptText("Option B");
+        GridPane optGrid = new GridPane();
+        optGrid.setHgap(8); optGrid.setVgap(8);
+        optGrid.add(optionAField, 0, 0); optGrid.add(optionBField, 1, 0);
+        optGrid.add(optionCField, 0, 1); optGrid.add(optionDField, 1, 1);
+        optGrid.getColumnConstraints().addAll(
+                colConstraint(), colConstraint()
+        );
 
-        optionCField = new TextField();
-        optionCField.setPromptText("Option C");
+        GridPane metaGrid = new GridPane();
+        metaGrid.setHgap(10); metaGrid.setVgap(8);
+        metaGrid.add(mkLabel("Type"), 0, 0); metaGrid.add(typeCombo, 1, 0);
+        metaGrid.add(mkLabel("Category"), 0, 1); metaGrid.add(categoryCombo, 1, 1);
+        metaGrid.add(mkLabel("Difficulty"), 0, 2); metaGrid.add(difficultyCombo, 1, 2);
+        metaGrid.getColumnConstraints().addAll(fixedCol(80), colConstraint());
 
-        optionDField = new TextField();
-        optionDField.setPromptText("Option D");
-
-        correctAnswerField = new TextField();
-        correctAnswerField.setPromptText("Correct answer (A/B/C/D or TRUE/FALSE)");
-
-        GridPane formGrid = new GridPane();
-        formGrid.setHgap(8);
-        formGrid.setVgap(8);
-        formGrid.add(new Label("Type"), 0, 0);
-        formGrid.add(typeCombo, 1, 0);
-        formGrid.add(new Label("Category"), 0, 1);
-        formGrid.add(categoryCombo, 1, 1);
-        formGrid.add(new Label("Difficulty"), 0, 2);
-        formGrid.add(difficultyCombo, 1, 2);
-        formGrid.add(new Label("Prompt"), 0, 3);
-        formGrid.add(promptArea, 1, 3);
-        formGrid.add(new Label("Option A"), 0, 4);
-        formGrid.add(optionAField, 1, 4);
-        formGrid.add(new Label("Option B"), 0, 5);
-        formGrid.add(optionBField, 1, 5);
-        formGrid.add(new Label("Option C"), 0, 6);
-        formGrid.add(optionCField, 1, 6);
-        formGrid.add(new Label("Option D"), 0, 7);
-        formGrid.add(optionDField, 1, 7);
-        formGrid.add(new Label("Correct"), 0, 8);
-        formGrid.add(correctAnswerField, 1, 8);
-
-        Button saveButton = new Button("Save question");
+        Button saveButton = new Button("💾  Save Question");
+        saveButton.getStyleClass().add("primary-button");
+        saveButton.setMaxWidth(Double.MAX_VALUE);
         saveButton.setOnAction(event -> saveQuestion());
 
-        Button deleteButton = new Button("Delete selected");
+        Button deleteButton = new Button("🗑  Delete Selected");
+        deleteButton.getStyleClass().add("danger-button");
+        deleteButton.setMaxWidth(Double.MAX_VALUE);
         deleteButton.setOnAction(event -> deleteQuestion());
 
-        Button clearButton = new Button("Clear form");
+        Button clearButton = new Button("✕  Clear Form");
+        clearButton.getStyleClass().add("nav-button");
+        clearButton.setMaxWidth(Double.MAX_VALUE);
         clearButton.setOnAction(event -> clearForm());
-
-        Button backButton = new Button("Back to dashboard");
-        backButton.setOnAction(event -> screenManager.show(AppRoute.ADMIN_DASHBOARD));
-
-        Button logoutButton = new Button("Logout");
-        logoutButton.setOnAction(event -> {
-            sessionContext.clear();
-            screenManager.show(AppRoute.AUTH);
-        });
-
-        HBox filterBar = new HBox(8, new Label("Filter"), filterCategoryCombo);
-        filterBar.setAlignment(Pos.CENTER_LEFT);
-
-        HBox actions = new HBox(10, saveButton, deleteButton, clearButton, backButton, logoutButton);
-        actions.setAlignment(Pos.CENTER_LEFT);
 
         feedbackLabel = new Label();
         feedbackLabel.setWrapText(true);
-        feedbackLabel.setStyle("-fx-text-fill: #b00020;");
+        feedbackLabel.getStyleClass().add("feedback-error");
 
-        root = new VBox(10, title, subtitleLabel, filterBar, questionListView, formGrid, actions, feedbackLabel);
-        root.setPadding(new Insets(20));
-        root.setStyle("-fx-background-color: #eef4fa;");
+        VBox formPane = new VBox(10,
+                formHeader, formModeLabel,
+                metaGrid,
+                mkLabel("Question Prompt"), promptArea,
+                mkLabel("Options (MCQ)"), optGrid,
+                new VBox(5, mkLabel("Correct Answer"), correctAnswerField),
+                saveButton, deleteButton, clearButton,
+                feedbackLabel
+        );
+        formPane.getStyleClass().add("stat-card");
+        formPane.setPrefWidth(380);
+
+        HBox contentRow = new HBox(20, listPane, formPane);
+        HBox.setHgrow(listPane, Priority.ALWAYS);
+        contentRow.setAlignment(Pos.TOP_LEFT);
+
+        root = new VBox(16, titleRow, subtitleLabel, contentRow);
+        root.getStyleClass().addAll("app-root", "screen-admin");
+        root.setPadding(new Insets(28));
 
         updateTypeInputs();
     }
 
-    @Override
-    public String title() {
-        return "Interactive Quiz - Admin Questions";
+    private Label mkLabel(String text) {
+        Label l = new Label(text);
+        l.setStyle("-fx-text-fill: #7a8caa; -fx-font-size: 12px; -fx-font-weight: 600;");
+        return l;
     }
 
-    @Override
-    public Parent root() {
-        return root;
+    private javafx.scene.layout.ColumnConstraints colConstraint() {
+        javafx.scene.layout.ColumnConstraints cc = new javafx.scene.layout.ColumnConstraints();
+        cc.setHgrow(Priority.ALWAYS);
+        cc.setFillWidth(true);
+        return cc;
     }
+
+    private javafx.scene.layout.ColumnConstraints fixedCol(double w) {
+        javafx.scene.layout.ColumnConstraints cc = new javafx.scene.layout.ColumnConstraints(w);
+        cc.setHgrow(Priority.NEVER);
+        return cc;
+    }
+
+    @Override public String title() { return "QuizMaster — Questions"; }
+    @Override public Parent root() { return root; }
 
     @Override
     public void onShow() {
         User currentUser = sessionContext.getCurrentUser();
-        if (currentUser == null) {
-            LOGGER.warn("Admin question access denied: no authenticated user");
-            screenManager.show(AppRoute.AUTH);
-            return;
-        }
-        if (currentUser.getRole() != Role.ADMIN) {
-            LOGGER.warn("Admin question access denied: userId={} role={}", currentUser.getId(), currentUser.getRole());
-            screenManager.show(AppRoute.CATEGORY);
-            return;
-        }
-
-        subtitleLabel.setText("Create, edit, and delete MCQ / True-False questions");
+        if (currentUser == null) { screenManager.show(AppRoute.AUTH); return; }
+        if (currentUser.getRole() != Role.ADMIN) { screenManager.show(AppRoute.CATEGORY); return; }
+        subtitleLabel.setText("Create, edit and delete MCQ / True-False questions");
         reloadCategories();
         loadQuestions();
-        feedbackLabel.setText("");
+        setFeedback("", "feedback-error");
     }
 
     private void reloadCategories() {
@@ -227,24 +301,17 @@ public class AdminQuestionScreen implements AppScreen {
             List<Category> categories = categoryDao.findAll();
             categoryMap.clear();
             categoryMap.putAll(categories.stream().collect(Collectors.toMap(Category::getId, Function.identity())));
-
             categoryCombo.setItems(FXCollections.observableArrayList(categories));
             if (!categories.isEmpty() && categoryCombo.getValue() == null) {
                 categoryCombo.setValue(categories.get(0));
             }
-
             List<CategoryFilter> filterOptions = new ArrayList<>();
             filterOptions.add(CategoryFilter.all());
-            for (Category category : categories) {
-                filterOptions.add(new CategoryFilter(category.getId(), category.getName()));
-            }
+            for (Category category : categories) filterOptions.add(new CategoryFilter(category.getId(), category.getName()));
             filterCategoryCombo.setItems(FXCollections.observableArrayList(filterOptions));
-            if (filterCategoryCombo.getValue() == null) {
-                filterCategoryCombo.setValue(filterOptions.get(0));
-            }
+            if (filterCategoryCombo.getValue() == null) filterCategoryCombo.setValue(filterOptions.get(0));
         } catch (RuntimeException exception) {
-            feedbackLabel.setStyle("-fx-text-fill: #b00020;");
-            feedbackLabel.setText("Could not load categories.");
+            setFeedback("Could not load categories.", "feedback-error");
         }
     }
 
@@ -257,175 +324,93 @@ public class AdminQuestionScreen implements AppScreen {
             } else {
                 questions = questionDao.findByCategory(selectedFilter.categoryId());
             }
-
             questionListView.setItems(FXCollections.observableArrayList(questions));
-            if (questions.isEmpty()) {
-                feedbackLabel.setStyle("-fx-text-fill: #7a6200;");
-                feedbackLabel.setText("No questions available for current filter.");
-            }
+            if (questions.isEmpty()) setFeedback("No questions for this filter.", "feedback-warning");
+            else setFeedback("", "feedback-error");
         } catch (RuntimeException exception) {
-            feedbackLabel.setStyle("-fx-text-fill: #b00020;");
-            feedbackLabel.setText("Could not load questions.");
+            setFeedback("Could not load questions.", "feedback-error");
         }
     }
 
     private void saveQuestion() {
         User actor = sessionContext.getCurrentUser();
-        String actorName = actor == null ? "unknown" : actor.getUsername();
         long actorId = actor == null ? -1 : actor.getId();
-
         try {
             QuestionType type = typeCombo.getValue();
             Category category = categoryCombo.getValue();
             Difficulty difficulty = difficultyCombo.getValue();
             String prompt = FormValidator.validatePrompt(promptArea.getText());
-
             if (type == null || category == null || difficulty == null) {
-                feedbackLabel.setStyle("-fx-text-fill: #b00020;");
-                feedbackLabel.setText("Type, category, difficulty and prompt are required.");
-                return;
+                setFeedback("Type, category and difficulty are required.", "feedback-error"); return;
             }
-
             Question question;
             boolean updateMode = selectedQuestion != null;
             if (type == QuestionType.MCQ) {
-                String optionA = FormValidator.validateOption("Option A", optionAField.getText());
-                String optionB = FormValidator.validateOption("Option B", optionBField.getText());
-                String optionC = FormValidator.validateOption("Option C", optionCField.getText());
-                String optionD = FormValidator.validateOption("Option D", optionDField.getText());
-                FormValidator.validateDistinctOptions(optionA, optionB, optionC, optionD);
+                String optA = FormValidator.validateOption("Option A", optionAField.getText());
+                String optB = FormValidator.validateOption("Option B", optionBField.getText());
+                String optC = FormValidator.validateOption("Option C", optionCField.getText());
+                String optD = FormValidator.validateOption("Option D", optionDField.getText());
+                FormValidator.validateDistinctOptions(optA, optB, optC, optD);
                 String correct = FormValidator.validateMcqCorrectAnswer(correctAnswerField.getText());
-
-                if (selectedQuestion != null) {
-                    question = new McqQuestion(
-                            selectedQuestion.getId(),
-                            category.getId(),
-                            difficulty,
-                            prompt,
-                            optionA,
-                            optionB,
-                            optionC,
-                            optionD,
-                            correct
-                    );
-                } else {
-                    question = new McqQuestion(category.getId(), difficulty, prompt, optionA, optionB, optionC, optionD, correct);
-                }
+                question = selectedQuestion != null
+                        ? new McqQuestion(selectedQuestion.getId(), category.getId(), difficulty, prompt, optA, optB, optC, optD, correct)
+                        : new McqQuestion(category.getId(), difficulty, prompt, optA, optB, optC, optD, correct);
             } else {
                 String correct = FormValidator.validateTrueFalseCorrectAnswer(correctAnswerField.getText());
-                if (selectedQuestion != null) {
-                    question = new TrueFalseQuestion(
-                            selectedQuestion.getId(),
-                            category.getId(),
-                            difficulty,
-                            prompt,
-                            correct
-                    );
-                } else {
-                    question = new TrueFalseQuestion(category.getId(), difficulty, prompt, correct);
-                }
+                question = selectedQuestion != null
+                        ? new TrueFalseQuestion(selectedQuestion.getId(), category.getId(), difficulty, prompt, correct)
+                        : new TrueFalseQuestion(category.getId(), difficulty, prompt, correct);
             }
-
             Question saved = questionDao.save(question);
-            LOGGER.info(
-                    "Admin question upsert successful: actorId={} actor={} mode={} questionId={} type={} categoryId={} difficulty={}",
-                    actorId,
-                    actorName,
-                    updateMode ? "update" : "create",
-                    saved.getId(),
-                    saved.getType(),
-                    saved.getCategoryId(),
-                    saved.getDifficulty()
-            );
-
-            feedbackLabel.setStyle("-fx-text-fill: #0a7d2f;");
-            feedbackLabel.setText("Question saved.");
+            LOGGER.info("Admin question upsert: actorId={} mode={} questionId={}", actorId, updateMode ? "update" : "create", saved.getId());
             clearForm();
             loadQuestions();
+            setFeedback("✅  Question saved.", "feedback-success");
         } catch (IllegalArgumentException exception) {
-            feedbackLabel.setStyle("-fx-text-fill: #b00020;");
-            feedbackLabel.setText(exception.getMessage());
+            setFeedback(exception.getMessage(), "feedback-error");
         } catch (RuntimeException exception) {
-            LOGGER.error("Admin question upsert failed: actorId={} actor={}", actorId, actorName, exception);
-            feedbackLabel.setStyle("-fx-text-fill: #b00020;");
-            feedbackLabel.setText("Could not save question: " + exception.getMessage());
+            LOGGER.error("Admin question upsert failed: actorId={}", actorId, exception);
+            setFeedback("Could not save question: " + exception.getMessage(), "feedback-error");
         }
     }
 
     private void deleteQuestion() {
         User actor = sessionContext.getCurrentUser();
-        String actorName = actor == null ? "unknown" : actor.getUsername();
         long actorId = actor == null ? -1 : actor.getId();
-
-        if (selectedQuestion == null) {
-            feedbackLabel.setStyle("-fx-text-fill: #b00020;");
-            feedbackLabel.setText("Select a question to delete.");
-            return;
-        }
-
+        if (selectedQuestion == null) { setFeedback("Select a question first.", "feedback-error"); return; }
         try {
             boolean deleted = questionDao.deleteById(selectedQuestion.getId());
-            if (!deleted) {
-                feedbackLabel.setStyle("-fx-text-fill: #b00020;");
-                feedbackLabel.setText("Question was not deleted.");
-                return;
-            }
-
-            LOGGER.info(
-                    "Admin question delete successful: actorId={} actor={} questionId={} type={} categoryId={}",
-                    actorId,
-                    actorName,
-                    selectedQuestion.getId(),
-                    selectedQuestion.getType(),
-                    selectedQuestion.getCategoryId()
-            );
-
-            feedbackLabel.setStyle("-fx-text-fill: #0a7d2f;");
-            feedbackLabel.setText("Question deleted.");
+            if (!deleted) { setFeedback("Question not found or already deleted.", "feedback-error"); return; }
+            LOGGER.info("Admin question delete: actorId={} questionId={}", actorId, selectedQuestion.getId());
             clearForm();
             loadQuestions();
+            setFeedback("🗑  Question deleted.", "feedback-success");
         } catch (RuntimeException exception) {
-            LOGGER.error(
-                    "Admin question delete failed: actorId={} actor={} questionId={}",
-                    actorId,
-                    actorName,
-                    selectedQuestion.getId(),
-                    exception
-            );
-            feedbackLabel.setStyle("-fx-text-fill: #b00020;");
-            feedbackLabel.setText("Could not delete question.");
+            LOGGER.error("Admin question delete failed: actorId={} questionId={}", actorId, selectedQuestion.getId(), exception);
+            setFeedback("Could not delete question.", "feedback-error");
         }
     }
 
     private void loadQuestionIntoForm(Question question) {
         selectedQuestion = question;
-        if (question == null) {
-            return;
-        }
-
+        if (question == null) return;
         typeCombo.setValue(question.getType());
         difficultyCombo.setValue(question.getDifficulty());
         promptArea.setText(question.getPrompt());
         correctAnswerField.setText(question.getCorrectAnswer());
-
         Category category = categoryMap.get(question.getCategoryId());
-        if (category != null) {
-            categoryCombo.setValue(category);
-        }
-
+        if (category != null) categoryCombo.setValue(category);
         if (question instanceof McqQuestion mcq) {
             optionAField.setText(mcq.getOptionA());
             optionBField.setText(mcq.getOptionB());
             optionCField.setText(mcq.getOptionC());
             optionDField.setText(mcq.getOptionD());
         } else {
-            optionAField.clear();
-            optionBField.clear();
-            optionCField.clear();
-            optionDField.clear();
+            optionAField.clear(); optionBField.clear(); optionCField.clear(); optionDField.clear();
         }
-
         updateTypeInputs();
+        formModeLabel.setText("✏  Editing question #" + question.getId());
+        formModeLabel.setStyle("-fx-text-fill: #f5a623; -fx-font-size: 12px; -fx-font-weight: 600;");
     }
 
     private void clearForm() {
@@ -434,40 +419,33 @@ public class AdminQuestionScreen implements AppScreen {
         typeCombo.setValue(QuestionType.MCQ);
         difficultyCombo.setValue(Difficulty.MEDIUM);
         promptArea.clear();
-        optionAField.clear();
-        optionBField.clear();
-        optionCField.clear();
-        optionDField.clear();
+        optionAField.clear(); optionBField.clear(); optionCField.clear(); optionDField.clear();
         correctAnswerField.clear();
+        formModeLabel.setText("Fill in the fields to create a new question.");
+        formModeLabel.setStyle("-fx-text-fill: #7a8caa; -fx-font-size: 12px;");
         updateTypeInputs();
     }
 
     private void updateTypeInputs() {
         boolean isMcq = typeCombo.getValue() == QuestionType.MCQ;
-        optionAField.setDisable(!isMcq);
-        optionBField.setDisable(!isMcq);
-        optionCField.setDisable(!isMcq);
-        optionDField.setDisable(!isMcq);
-
+        optionAField.setDisable(!isMcq); optionBField.setDisable(!isMcq);
+        optionCField.setDisable(!isMcq); optionDField.setDisable(!isMcq);
         if (!isMcq) {
-            optionAField.clear();
-            optionBField.clear();
-            optionCField.clear();
-            optionDField.clear();
-            correctAnswerField.setPromptText("Correct answer (TRUE/FALSE)");
+            optionAField.clear(); optionBField.clear(); optionCField.clear(); optionDField.clear();
+            correctAnswerField.setPromptText("TRUE or FALSE");
         } else {
-            correctAnswerField.setPromptText("Correct answer (A/B/C/D)");
+            correctAnswerField.setPromptText("A, B, C or D");
         }
     }
 
     private record CategoryFilter(Long categoryId, String label) {
-        private static CategoryFilter all() {
-            return new CategoryFilter(null, "All categories");
-        }
+        private static CategoryFilter all() { return new CategoryFilter(null, "All categories"); }
+        @Override public String toString() { return label; }
+    }
 
-        @Override
-        public String toString() {
-            return label;
-        }
+    private void setFeedback(String message, String styleClass) {
+        feedbackLabel.getStyleClass().removeAll("feedback-error", "feedback-success", "feedback-warning");
+        feedbackLabel.getStyleClass().add(styleClass);
+        feedbackLabel.setText(message);
     }
 }

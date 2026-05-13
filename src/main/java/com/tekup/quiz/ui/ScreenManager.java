@@ -3,6 +3,7 @@ package com.tekup.quiz.ui;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 
+import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -43,6 +44,10 @@ public class ScreenManager {
 
         if (scene == null) {
             scene = new Scene(screen.root(), DEFAULT_WIDTH, DEFAULT_HEIGHT);
+            URL stylesheetUrl = ScreenManager.class.getResource("/ui/modern-theme.css");
+            if (stylesheetUrl != null) {
+                scene.getStylesheets().add(stylesheetUrl.toExternalForm());
+            }
             stage.setScene(scene);
         } else {
             scene.setRoot(screen.root());

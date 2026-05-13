@@ -10,8 +10,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 public class QuizService {
     private static final Logger LOGGER = LoggerFactory.getLogger(QuizService.class);
@@ -40,25 +44,59 @@ public class QuizService {
                 questionCount
         );
 
-        List<Question> questions = questionDao.findByCategoryAndDifficulty(categoryId, difficulty, questionCount);
-        if (questions.isEmpty()) {
+        List<Question> difficultyMatched = new ArrayList<>(questionDao.findByCategoryAndDifficulty(categoryId, difficulty, questionCount));
+        if (difficultyMatched.size() >= questionCount) {
+            LOGGER.info(
+                    "Quiz generation successful using exact difficulty match: categoryId={} difficulty={} returnedCount={}",
+                    categoryId,
+                    difficulty,
+                    difficultyMatched.size()
+            );
+            return difficultyMatched;
+        }
+
+        List<Question> allCategoryQuestions = questionDao.findByCategory(categoryId);
+        if (allCategoryQuestions.isEmpty()) {
             LOGGER.warn(
                     "Quiz generation rejected: no questions for categoryId={} difficulty={}",
                     categoryId,
                     difficulty
             );
             throw new IllegalStateException(
-                    "No questions are available for the selected category and difficulty"
+                    "No questions are available for the selected category"
             );
         }
 
+        List<Question> merged = new ArrayList<>(difficultyMatched);
+        Set<Long> selectedQuestionIds = new HashSet<>();
+        for (Question question : merged) {
+            selectedQuestionIds.add(question.getId());
+        }
+
+        List<Question> fallbackCandidates = new ArrayList<>();
+        for (Question question : allCategoryQuestions) {
+            if (!selectedQuestionIds.contains(question.getId())) {
+                fallbackCandidates.add(question);
+            }
+        }
+        Collections.shuffle(fallbackCandidates);
+
+        int missingCount = Math.max(0, questionCount - merged.size());
+        for (int index = 0; index < missingCount && index < fallbackCandidates.size(); index++) {
+            merged.add(fallbackCandidates.get(index));
+        }
+
+        Collections.shuffle(merged);
+
         LOGGER.info(
-                "Quiz generation successful: categoryId={} difficulty={} returnedCount={}",
+                "Quiz generation successful: categoryId={} difficulty={} requestedCount={} matchedDifficultyCount={} returnedCount={}",
                 categoryId,
                 difficulty,
-                questions.size()
+                questionCount,
+                difficultyMatched.size(),
+                merged.size()
         );
-        return questions;
+        return merged;
     }
 
     public QuizResult evaluate(long userId,

@@ -15,8 +15,11 @@ import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
+import javafx.scene.control.Separator;
 import javafx.scene.control.TextField;
-import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 
 import java.util.Objects;
@@ -40,95 +43,133 @@ public class AuthScreen implements AppScreen {
         this.sessionContext = Objects.requireNonNull(sessionContext, "sessionContext must not be null");
         this.authService = Objects.requireNonNull(authService, "authService must not be null");
 
-        Label title = new Label("Interactive Quiz");
-        title.setStyle("-fx-font-size: 28px; -fx-font-weight: bold;");
+        // ── Brand header ──────────────────────────────────────
+        Label brandIcon = new Label("🎯");
+        brandIcon.setStyle("-fx-font-size: 40px;");
 
-        modeLabel = new Label("Login");
-        modeLabel.setStyle("-fx-font-size: 16px; -fx-text-fill: #333333;");
+        Label brandName = new Label("QuizMaster");
+        brandName.setStyle("-fx-font-size: 22px; -fx-font-weight: 800; -fx-text-fill: #e2e8f8;");
 
-        GridPane form = new GridPane();
-        form.setHgap(10);
-        form.setVgap(10);
-        form.setAlignment(Pos.CENTER);
+        Label brandTagline = new Label("Test your knowledge, top the leaderboard");
+        brandTagline.setStyle("-fx-font-size: 13px; -fx-text-fill: #7a8caa;");
 
+        VBox brandBox = new VBox(4, brandIcon, brandName, brandTagline);
+        brandBox.setAlignment(Pos.CENTER);
+
+        Separator sep = new Separator();
+        sep.setStyle("-fx-background-color: rgba(99,120,220,0.18); -fx-pref-height: 1;");
+
+        // ── Mode label ────────────────────────────────────────
+        modeLabel = new Label("Sign in to your account");
+        modeLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: 700; -fx-text-fill: #c7d2ee;");
+
+        // ── Form fields ───────────────────────────────────────
+        Label userLabel = new Label("Username");
+        userLabel.setStyle("-fx-text-fill: #7a8caa; -fx-font-size: 12px; -fx-font-weight: 600;");
         usernameField = new TextField();
-        usernameField.setPromptText("Username");
+        usernameField.setPromptText("Enter your username");
+        usernameField.setPrefWidth(320);
 
+        Label passLabel = new Label("Password");
+        passLabel.setStyle("-fx-text-fill: #7a8caa; -fx-font-size: 12px; -fx-font-weight: 600;");
         passwordField = new PasswordField();
-        passwordField.setPromptText("Password");
+        passwordField.setPromptText("Enter your password");
 
-        registerModeCheckbox = new CheckBox("Create new account");
-        registerModeCheckbox.setOnAction(event -> updateMode());
-
+        Label roleLabel = new Label("Account role");
+        roleLabel.setStyle("-fx-text-fill: #7a8caa; -fx-font-size: 12px; -fx-font-weight: 600;");
         roleComboBox = new ComboBox<>();
         roleComboBox.getItems().addAll(Role.PLAYER, Role.ADMIN);
         roleComboBox.setValue(Role.PLAYER);
         roleComboBox.setDisable(true);
+        roleComboBox.setPrefWidth(320);
 
-        submitButton = new Button("Login");
+        VBox roleRow = new VBox(4, roleLabel, roleComboBox);
+
+        registerModeCheckbox = new CheckBox("Create a new account");
+        registerModeCheckbox.setStyle("-fx-text-fill: #7b9bff; -fx-font-size: 13px;");
+        registerModeCheckbox.setOnAction(event -> updateMode());
+
+        submitButton = new Button("Sign In");
         submitButton.setDefaultButton(true);
+        submitButton.getStyleClass().add("primary-button");
+        submitButton.setMaxWidth(Double.MAX_VALUE);
+        submitButton.setStyle("-fx-font-size: 14px; -fx-padding: 12 0;");
         submitButton.setOnAction(event -> handleSubmit());
 
-        form.add(new Label("Username"), 0, 0);
-        form.add(usernameField, 1, 0);
-        form.add(new Label("Password"), 0, 1);
-        form.add(passwordField, 1, 1);
-        form.add(new Label("Role"), 0, 2);
-        form.add(roleComboBox, 1, 2);
-
         feedbackLabel = new Label();
-        feedbackLabel.setStyle("-fx-text-fill: #b00020;");
+        feedbackLabel.getStyleClass().add("feedback-error");
+        feedbackLabel.setWrapText(true);
+        feedbackLabel.setMaxWidth(320);
 
-        root = new VBox(14, title, modeLabel, form, registerModeCheckbox, submitButton, feedbackLabel);
-        root.setPadding(new Insets(28));
-        root.setAlignment(Pos.TOP_CENTER);
-        root.setStyle("-fx-background-color: linear-gradient(to bottom right, #f8fbff, #edf5ff);");
+        VBox form = new VBox(10,
+                new VBox(4, userLabel, usernameField),
+                new VBox(4, passLabel, passwordField),
+                roleRow,
+                registerModeCheckbox,
+                submitButton,
+                feedbackLabel
+        );
+
+        // ── Card ──────────────────────────────────────────────
+        VBox card = new VBox(20, brandBox, sep, modeLabel, form);
+        card.getStyleClass().add("screen-card");
+        card.setMaxWidth(400);
+        card.setAlignment(Pos.TOP_LEFT);
+        card.setPrefWidth(400);
+
+        // ── Page root ─────────────────────────────────────────
+        root = new VBox(card);
+        root.getStyleClass().addAll("app-root", "screen-auth");
+        root.setAlignment(Pos.CENTER);
+        root.setPadding(new Insets(40));
     }
 
-    @Override
-    public String title() {
-        return "Interactive Quiz - Authentication";
-    }
-
-    @Override
-    public Parent root() {
-        return root;
-    }
+    @Override public String title() { return "QuizMaster — Sign In"; }
+    @Override public Parent root() { return root; }
 
     @Override
     public void onShow() {
+        registerModeCheckbox.setSelected(false);
+        roleComboBox.setDisable(true);
+        submitButton.setText("Sign In");
+        modeLabel.setText("Sign in to your account");
         if (sessionContext.consumeSessionExpiredNotice()) {
-            feedbackLabel.setStyle("-fx-text-fill: #7a6200;");
-            feedbackLabel.setText("Session expired due to inactivity. Please log in again.");
+            setFeedback("Session expired. Please sign in again.", "feedback-warning");
+            usernameField.clear();
+            passwordField.clear();
             return;
         }
-        feedbackLabel.setStyle("-fx-text-fill: #b00020;");
-        feedbackLabel.setText("");
+        usernameField.clear();
+        passwordField.clear();
+        setFeedback("", "feedback-error");
+    }
+
+    private void setFeedback(String message, String styleClass) {
+        feedbackLabel.getStyleClass().removeAll("feedback-error", "feedback-success", "feedback-warning");
+        feedbackLabel.getStyleClass().add(styleClass);
+        feedbackLabel.setText(message);
     }
 
     private void updateMode() {
-        boolean registerMode = registerModeCheckbox.isSelected();
-        roleComboBox.setDisable(!registerMode);
-        modeLabel.setText(registerMode ? "Register" : "Login");
-        submitButton.setText(registerMode ? "Register" : "Login");
-        feedbackLabel.setText("");
+        boolean register = registerModeCheckbox.isSelected();
+        roleComboBox.setDisable(!register);
+        modeLabel.setText(register ? "Create your account" : "Sign in to your account");
+        submitButton.setText(register ? "Create Account" : "Sign In");
+        setFeedback("", "feedback-error");
     }
 
     private void handleSubmit() {
         String username = usernameField.getText();
         String password = passwordField.getText();
-
         try {
             User authenticatedUser;
             if (registerModeCheckbox.isSelected()) {
                 Role selectedRole = roleComboBox.getValue() == null ? Role.PLAYER : roleComboBox.getValue();
                 authenticatedUser = authService.register(username, password, selectedRole);
-                feedbackLabel.setStyle("-fx-text-fill: #0a7d2f;");
-                feedbackLabel.setText("Registration successful. You are now logged in.");
+                setFeedback("Account created! Welcome, " + authenticatedUser.getUsername(), "feedback-success");
             } else {
                 authenticatedUser = authService.login(username, password);
             }
-
             sessionContext.setCurrentUser(authenticatedUser);
             sessionContext.setSelectedCategory(null);
             sessionContext.setSelectedDifficulty(null);
@@ -137,11 +178,9 @@ public class AuthScreen implements AppScreen {
             passwordField.clear();
             screenManager.show(AppRoute.CATEGORY);
         } catch (IllegalArgumentException exception) {
-            feedbackLabel.setStyle("-fx-text-fill: #b00020;");
-            feedbackLabel.setText(exception.getMessage());
+            setFeedback(exception.getMessage(), "feedback-error");
         } catch (RuntimeException exception) {
-            feedbackLabel.setStyle("-fx-text-fill: #b00020;");
-            feedbackLabel.setText("Service unavailable. Check database settings and try again.");
+            setFeedback("Service unavailable. Check database settings and try again.", "feedback-error");
         }
     }
 }
