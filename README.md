@@ -69,3 +69,4 @@ Initial implementation bootstrap for the Java interactive quiz project.
 - ADMIN flow implemented: Dashboard -> Category Management -> Question Management -> CSV Tools
 - ADMIN routes are guarded and hidden for PLAYER users
 - Console fallback auth flow available
+# Java_Project
